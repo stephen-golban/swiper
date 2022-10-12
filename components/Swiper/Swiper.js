@@ -1,78 +1,67 @@
-/* eslint-disable react-native/no-inline-styles */
-import {View, Button, TouchableOpacity, Text} from 'react-native';
 import React from 'react';
-import Modal from 'react-native-modal';
-// import Modal from '../Modal/Modal';
-import useModal from '../Modal/useModal';
 
-const Swiper = () => {
-  const myRef = React.useRef(null);
-  const [ref, {hide, show, visible, position, getElementPosition}] = useModal();
+import { useSwiper } from './hooks';
 
-  console.log(position);
+import Card from '../Card/Card';
+import _lodash from '@/lib/lodash';
+import { Box, Typography } from '@/components/common';
+
+const Swiper = React.forwardRef(({ data, loading, loop, initialIndex, cardHeight, renderNoMoreCards, ...fns }, ref) => {
+  const [items, { swipeCard, ended, positionRef, dragHandlers }] = useSwiper({
+    data,
+    loop,
+    initialIndex,
+    ...fns,
+  });
+
+  React.useImperativeHandle(ref, () => ({ swipeCard }), [swipeCard]);
 
   return (
-    <View style={{width: 360, height: 450, backgroundColor: 'yellow'}}>
-      <Modal
-        isVisible={visible}
-        coverScreen={false}
-        animationIn="fadeIn"
-        hasBackdrop={false}
-        animationOut="fadeOut"
-        hideModalContentWhileAnimating>
-        <View
-          style={{
-            backgroundColor: 'white',
-            borderRadius: 20,
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            height: 114,
-          }}>
-          <Text>Hello!</Text>
-          <Text>Hello!</Text>
-          <Text>Hello!</Text>
-          <Text>Hello!</Text>
-        </View>
-      </Modal>
-
-      <TouchableOpacity
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: 999,
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'absolute',
-          left: 14,
-          zIndex: 9999,
-          bottom: 20,
-          backgroundColor: 'red',
-        }}
-        onPress={hide}
-        ref={myRef}>
-        <Text>Close</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        ref={myRef}
-        onPress={show}
-        style={{
-          width: 60,
-          height: 60,
-          borderRadius: 999,
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'absolute',
-          right: 14,
-          zIndex: 9999,
-          bottom: 20,
-          backgroundColor: 'green',
-        }}
-        onLayout={() => getElementPosition(myRef)}>
-        <Text>Open</Text>
-      </TouchableOpacity>
-    </View>
+    <Box align="center" direction="col">
+      {loading ? (
+        <Box background="white" align="center" justify="center">
+          <Typography weight="bold" size="xxl">
+            Loading...
+          </Typography>
+        </Box>
+      ) : renderNoMoreCards && ended ? (
+        <Box justify="center" align="center">
+          {renderNoMoreCards()}
+        </Box>
+      ) : (
+        items.reverse().map((item, index) => {
+          // reversing the index and also setting the index only for the next two cards
+          index = items.length - index - 1;
+          const movable = index === 0;
+          return (
+            <Card
+              key={`${item?.name}-${index}`}
+              data={item}
+              movable={movable}
+              cardHeight={cardHeight}
+              positionRef={positionRef}
+              dragHandlers={movable ? dragHandlers : {}}
+            />
+          );
+        })
+      )}
+    </Box>
   );
+});
+
+Swiper.defaultProps = {
+  loop: false,
+  initialIndex: 0,
+  loading: undefined,
+  onSwipe: _lodash.noop,
+  onSwipedAll: _lodash.noop,
+  onSwipeLeft: _lodash.noop,
+  onSwipeRight: _lodash.noop,
+  renderNoMoreCards: () => (
+    <Typography weight="bold" size="xl">
+      No more cards!
+    </Typography>
+  ),
 };
 
 export default Swiper;
